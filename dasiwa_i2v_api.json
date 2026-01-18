@@ -1,0 +1,175 @@
+{
+  "1": {
+    "inputs": {
+      "ckpt_name": "TastySin-HIGH-v8.1.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint High"
+    }
+  },
+  "2": {
+    "inputs": {
+      "ckpt_name": "TastySin-LOW-v8.1.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint Low"
+    }
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "VAE Loader"
+    }
+  },
+  "4": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "CLIP Loader"
+    }
+  },
+  "5": {
+    "inputs": {
+      "text": "",
+      "clip": ["4", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Positive Prompt"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "censored, mosaic censoring, bar censor, pixelated, glowing, bloom, blurry, out of focus, low detail, bad anatomy, ugly, overexposed, underexposed, distorted face, extra limbs, cartoonish, 3d render artifacts, duplicate people, unnatural lighting, bad composition, missing shadows, low resolution, poorly textured, glitch, noise, grain, static, motionless, still frame, stylized, artwork, painting, illustration, many people in background, three legs, walking backward",
+      "clip": ["4", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "7": {
+    "inputs": {
+      "image": "input.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "8": {
+    "inputs": {
+      "width": 528,
+      "height": 768,
+      "length": 81,
+      "batch_size": 1,
+      "positive": ["5", 0],
+      "negative": ["6", 0],
+      "vae": ["3", 0],
+      "start_image": ["7", 0]
+    },
+    "class_type": "WanImageToVideo",
+    "_meta": {
+      "title": "Wan Image To Video"
+    }
+  },
+  "9": {
+    "inputs": {
+      "shift": 5,
+      "model": ["1", 0]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "Sigma Shift High"
+    }
+  },
+  "10": {
+    "inputs": {
+      "shift": 5,
+      "model": ["2", 0]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "Sigma Shift Low"
+    }
+  },
+  "11": {
+    "inputs": {
+      "enable_disable": "enable",
+      "seed": 12345,
+      "control_after_generate": "randomize",
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 0,
+      "end_at_step": 2,
+      "return_with_leftover_noise": "enable",
+      "model": ["9", 0],
+      "positive": ["5", 0],
+      "negative": ["6", 0],
+      "latent_image": ["8", 0]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler High"
+    }
+  },
+  "12": {
+    "inputs": {
+      "enable_disable": "enable",
+      "seed": 12345,
+      "control_after_generate": "randomize",
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 2,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": ["10", 0],
+      "positive": ["5", 0],
+      "negative": ["6", 0],
+      "latent_image": ["11", 0]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler Low"
+    }
+  },
+  "13": {
+    "inputs": {
+      "samples": ["12", 0],
+      "vae": ["3", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "14": {
+    "inputs": {
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "DaSiWa_video",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "images": ["13", 0]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine"
+    }
+  }
+}
