@@ -6,6 +6,8 @@ Downloads DaSiWa model files from Yandex.Disk during Docker build.
 import os
 import sys
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Model paths configuration (ComfyUI structure)
 COMFYUI_BASE = "/ComfyUI/models"
@@ -67,12 +69,37 @@ YANDEX_DISK_LINKS = {
 # ============================================================================
 
 
+def get_session():
+    """
+    Создает сессию requests с retry и таймаутами.
+    """
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+    )
+    adapter = HTTPAdapter(
+        max_retries=retry_strategy,
+        pool_connections=10,
+        pool_maxsize=10
+    )
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
 def get_yandex_download_url(public_url: str) -> str:
     """
     Получает прямую ссылку на скачивание из публичной ссылки Яндекс.Диска.
     """
     api_url = "https://cloud-api.yandex.net/v1/disk/public/resources/download"
-    response = requests.get(api_url, params={"public_key": public_url})
+    session = get_session()
+    response = session.get(
+        api_url,
+        params={"public_key": public_url},
+        timeout=30
+    )
     
     if response.status_code != 200:
         raise Exception(f"Failed to get download URL: {response.status_code} - {response.text}")
@@ -82,7 +109,7 @@ def get_yandex_download_url(public_url: str) -> str:
 
 def download_file(url: str, destination: str, name: str):
     """
-    Скачивает файл с прогрессом.
+    Скачивает файл с оптимизированными настройками для быстрого скачивания.
     """
     os.makedirs(os.path.dirname(destination), exist_ok=True)
     
@@ -91,24 +118,35 @@ def download_file(url: str, destination: str, name: str):
     
     download_url = get_yandex_download_url(url)
     
-    response = requests.get(download_url, stream=True)
-    total_size = int(response.headers.get('content-length', 0))
+    session = get_session()
+    response = session.get(
+        download_url,
+        stream=True,
+        timeout=(30, 300)  # connect timeout, read timeout
+    )
+    response.raise_for_status()
     
+    total_size = int(response.headers.get('content-length', 0))
     downloaded = 0
-    chunk_size = 8192 * 1024  # 8MB chunks
+    chunk_size = 32 * 1024 * 1024  # 32MB chunks (увеличено для скорости)
+    last_percent = -1
     
     with open(destination, 'wb') as f:
         for chunk in response.iter_content(chunk_size=chunk_size):
             if chunk:
                 f.write(chunk)
                 downloaded += len(chunk)
+                
+                # Выводим прогресс только каждые 5% чтобы не спамить логи
                 if total_size > 0:
-                    percent = (downloaded / total_size) * 100
-                    mb_downloaded = downloaded / (1024 * 1024)
-                    mb_total = total_size / (1024 * 1024)
-                    print(f"   Progress: {mb_downloaded:.1f}/{mb_total:.1f} MB ({percent:.1f}%)", end='\r')
+                    percent = int((downloaded / total_size) * 100)
+                    if percent != last_percent and percent % 5 == 0:
+                        mb_downloaded = downloaded / (1024 * 1024)
+                        mb_total = total_size / (1024 * 1024)
+                        print(f"   Progress: {mb_downloaded:.1f}/{mb_total:.1f} MB ({percent}%)")
+                        last_percent = percent
     
-    print(f"\n   ✓ Downloaded {name} successfully!")
+    print(f"   ✓ Downloaded {name} successfully! ({downloaded / (1024 * 1024):.1f} MB)")
 
 
 def download_models():
