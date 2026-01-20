@@ -33,13 +33,14 @@ RUN cd /ComfyUI/custom_nodes && \
     cd ComfyUI-KJNodes && \
     pip install -r requirements.txt
 
-# Download all models from Yandex.Disk
-COPY builder/cache_models.py /cache_models.py
-RUN python3 /cache_models.py && rm /cache_models.py
-
+# Copy application files
 COPY . .
 COPY extra_model_paths.yaml /ComfyUI/extra_model_paths.yaml
 COPY dasiwa_i2v_api.json /dasiwa_i2v_api.json
 RUN chmod +x /entrypoint.sh
+
+# Models will be loaded from Network Volume at runtime
+# If models are not in Volume, they will be downloaded on first run
+COPY builder/cache_models.py /cache_models.py
 
 CMD ["/entrypoint.sh"]

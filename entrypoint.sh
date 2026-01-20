@@ -3,6 +3,23 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
+# Check if models exist, download if missing
+echo "Checking for DaSiWa models..."
+HIGH_MODEL="/ComfyUI/models/checkpoints/TastySin-HIGH-v8.1.safetensors"
+LOW_MODEL="/ComfyUI/models/checkpoints/TastySin-LOW-v8.1.safetensors"
+VAE_MODEL="/ComfyUI/models/vae/wan_2.1_vae.safetensors"
+TEXT_ENCODER="/ComfyUI/models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+
+if [ ! -f "$HIGH_MODEL" ] || [ ! -f "$LOW_MODEL" ] || [ ! -f "$VAE_MODEL" ] || [ ! -f "$TEXT_ENCODER" ]; then
+    echo "⚠️ Some models are missing, downloading from Yandex.Disk..."
+    python3 /cache_models.py || {
+        echo "❌ Failed to download models. Please ensure models are in Network Volume or check Yandex.Disk links."
+        exit 1
+    }
+else
+    echo "✅ All models found!"
+fi
+
 # Start ComfyUI in the background
 echo "Starting ComfyUI in the background..."
 python /ComfyUI/main.py --listen --use-sage-attention &
