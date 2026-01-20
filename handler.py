@@ -218,13 +218,13 @@ def handler(job):
     prompt["8"]["inputs"]["length"] = length
     
     # Node 11: KSampler High
-    prompt["11"]["inputs"]["seed"] = seed
+    prompt["11"]["inputs"]["noise_seed"] = seed
     prompt["11"]["inputs"]["steps"] = steps
     prompt["11"]["inputs"]["cfg"] = cfg
     prompt["11"]["inputs"]["end_at_step"] = steps // 2  # Half steps for HIGH
     
     # Node 12: KSampler Low
-    prompt["12"]["inputs"]["seed"] = seed
+    prompt["12"]["inputs"]["noise_seed"] = seed
     prompt["12"]["inputs"]["steps"] = steps
     prompt["12"]["inputs"]["cfg"] = cfg
     prompt["12"]["inputs"]["start_at_step"] = steps // 2  # Start from half for LOW

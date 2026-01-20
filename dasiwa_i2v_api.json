@@ -104,20 +104,19 @@
   },
   "11": {
     "inputs": {
-      "enable_disable": "enable",
-      "seed": 12345,
-      "control_after_generate": "randomize",
+      "add_noise": "enable",
+      "noise_seed": 12345,
       "steps": 4,
-      "cfg": 1,
+      "cfg": 1.0,
       "sampler_name": "euler",
       "scheduler": "simple",
       "start_at_step": 0,
       "end_at_step": 2,
       "return_with_leftover_noise": "enable",
       "model": ["9", 0],
-      "positive": ["5", 0],
-      "negative": ["6", 0],
-      "latent_image": ["8", 0]
+      "positive": ["8", 0],
+      "negative": ["8", 1],
+      "latent_image": ["8", 2]
     },
     "class_type": "KSamplerAdvanced",
     "_meta": {
@@ -126,19 +125,18 @@
   },
   "12": {
     "inputs": {
-      "enable_disable": "enable",
-      "seed": 12345,
-      "control_after_generate": "randomize",
+      "add_noise": "disable",
+      "noise_seed": 12345,
       "steps": 4,
-      "cfg": 1,
+      "cfg": 1.0,
       "sampler_name": "euler",
       "scheduler": "simple",
       "start_at_step": 2,
       "end_at_step": 10000,
       "return_with_leftover_noise": "disable",
       "model": ["10", 0],
-      "positive": ["5", 0],
-      "negative": ["6", 0],
+      "positive": ["8", 0],
+      "negative": ["8", 1],
       "latent_image": ["11", 0]
     },
     "class_type": "KSamplerAdvanced",
@@ -165,6 +163,8 @@
       "pix_fmt": "yuv420p",
       "crf": 19,
       "save_metadata": true,
+      "pingpong": false,
+      "save_output": true,
       "images": ["13", 0]
     },
     "class_type": "VHS_VideoCombine",
