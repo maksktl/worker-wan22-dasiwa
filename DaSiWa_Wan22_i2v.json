@@ -1871,7 +1871,7 @@
               }
             },
             "widgets_values": [
-              "Wan/wan_2.1_vae.safetensors"
+              "wan_2.1_vae.safetensors"
             ],
             "color": "#223",
             "bgcolor": "#335"

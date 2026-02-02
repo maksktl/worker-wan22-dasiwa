@@ -63,7 +63,16 @@
     },
     "class_type": "LoadImage",
     "_meta": {
-      "title": "Load Image"
+      "title": "First Frame Image"
+    }
+  },
+  "15": {
+    "inputs": {
+      "image": "input_last.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Last Frame Image"
     }
   },
   "8": {
@@ -75,11 +84,12 @@
       "positive": ["5", 0],
       "negative": ["6", 0],
       "vae": ["3", 0],
-      "start_image": ["7", 0]
+      "start_image": ["7", 0],
+      "end_image": ["15", 0]
     },
-    "class_type": "WanImageToVideo",
+    "class_type": "WanFirstLastFrameToVideo",
     "_meta": {
-      "title": "Wan Image To Video"
+      "title": "Wan First Last Frame To Video"
     }
   },
   "9": {
@@ -109,7 +119,7 @@
       "steps": 4,
       "cfg": 1.0,
       "sampler_name": "euler",
-      "scheduler": "simple",
+      "scheduler": "linear_quadratic",
       "start_at_step": 0,
       "end_at_step": 2,
       "return_with_leftover_noise": "enable",
@@ -130,7 +140,7 @@
       "steps": 4,
       "cfg": 1.0,
       "sampler_name": "euler",
-      "scheduler": "simple",
+      "scheduler": "linear_quadratic",
       "start_at_step": 2,
       "end_at_step": 10000,
       "return_with_leftover_noise": "disable",

@@ -142,7 +142,7 @@ def load_workflow(workflow_path):
 
 def handler(job):
     logger.info("=" * 80)
-    logger.info("NEW JOB STARTED - DaSiWa I2V")
+    logger.info("NEW JOB STARTED - DaSiWa I2V/FLF2V")
     logger.info("=" * 80)
 
     job_input = job.get("input", {})
@@ -151,13 +151,15 @@ def handler(job):
     job_input_log = job_input.copy()
     if "image_base64" in job_input_log and job_input_log["image_base64"]:
         job_input_log["image_base64"] = f"[BASE64_TRUNCATED_{len(job_input_log['image_base64'])}chars]"
+    if "last_image_base64" in job_input_log and job_input_log["last_image_base64"]:
+        job_input_log["last_image_base64"] = f"[BASE64_TRUNCATED_{len(job_input_log['last_image_base64'])}chars]"
 
     logger.info(f"Received job input: {job_input_log}")
 
     task_id = f"task_{uuid.uuid4()}"
     temp_dirs_created = set()
 
-    # Process image input
+    # Process first frame image input (required)
     image_path = None
     if "image_path" in job_input:
         image_path = process_input(job_input["image_path"], task_id, "input_image.png", "path")
@@ -170,6 +172,26 @@ def handler(job):
     else:
         image_path = "/example_image.png"
         logger.info("Using default image file: /example_image.png")
+    
+    # Process last frame image input (optional - for FLF2V mode)
+    last_image_path = None
+    use_flf2v = False
+    if "last_image_path" in job_input:
+        last_image_path = process_input(job_input["last_image_path"], task_id, "input_last_image.png", "path")
+        use_flf2v = True
+    elif "last_image_url" in job_input:
+        temp_dirs_created.add(task_id)
+        last_image_path = process_input(job_input["last_image_url"], task_id, "input_last_image.png", "url")
+        use_flf2v = True
+    elif "last_image_base64" in job_input:
+        temp_dirs_created.add(task_id)
+        last_image_path = process_input(job_input["last_image_base64"], task_id, "input_last_image.png", "base64")
+        use_flf2v = True
+    
+    if use_flf2v:
+        logger.info(f"🎬 FLF2V mode: First frame -> Last frame video generation")
+    else:
+        logger.info(f"🎬 I2V mode: Image to video generation")
 
     # Load DaSiWa I2V workflow
     workflow_file = "/dasiwa_i2v_api.json"
@@ -209,30 +231,55 @@ def handler(job):
     negative_prompt = job_input.get("negative_prompt", prompt["6"]["inputs"]["text"])
     prompt["6"]["inputs"]["text"] = negative_prompt
     
-    # Node 7: Load image
+    # Node 7: Load first frame image
     prompt["7"]["inputs"]["image"] = image_path
     
-    # Node 8: WanImageToVideo
+    # Node 15: Load last frame image (for FLF2V mode)
+    if use_flf2v and last_image_path:
+        prompt["15"]["inputs"]["image"] = last_image_path
+        # Keep WanFirstLastFrameToVideo with end_image
+        logger.info(f"FLF2V: Using last frame image: {last_image_path}")
+    else:
+        # I2V mode: Remove end_image connection from workflow
+        # Change node type to WanImageToVideo for backward compatibility
+        prompt["8"]["class_type"] = "WanImageToVideo"
+        if "end_image" in prompt["8"]["inputs"]:
+            del prompt["8"]["inputs"]["end_image"]
+        # Remove unused node 15
+        if "15" in prompt:
+            del prompt["15"]
+        logger.info(f"I2V: Using single image mode")
+    
+    # Node 8: WanFirstLastFrameToVideo / WanImageToVideo
     prompt["8"]["inputs"]["width"] = adjusted_width
     prompt["8"]["inputs"]["height"] = adjusted_height
     prompt["8"]["inputs"]["length"] = length
+    
+    # Sampler settings from job input or defaults (FastFidelity C-AiO defaults: euler/linear_quadratic)
+    sampler_name = job_input.get("sampler_name", "euler")
+    scheduler = job_input.get("scheduler", "linear_quadratic")
     
     # Node 11: KSampler High
     prompt["11"]["inputs"]["noise_seed"] = seed
     prompt["11"]["inputs"]["steps"] = steps
     prompt["11"]["inputs"]["cfg"] = cfg
+    prompt["11"]["inputs"]["sampler_name"] = sampler_name
+    prompt["11"]["inputs"]["scheduler"] = scheduler
     prompt["11"]["inputs"]["end_at_step"] = steps // 2  # Half steps for HIGH
     
     # Node 12: KSampler Low
     prompt["12"]["inputs"]["noise_seed"] = seed
     prompt["12"]["inputs"]["steps"] = steps
     prompt["12"]["inputs"]["cfg"] = cfg
+    prompt["12"]["inputs"]["sampler_name"] = sampler_name
+    prompt["12"]["inputs"]["scheduler"] = scheduler
     prompt["12"]["inputs"]["start_at_step"] = steps // 2  # Start from half for LOW
     
     # Node 14: Video output
     prompt["14"]["inputs"]["frame_rate"] = fps
 
-    logger.info(f"DaSiWa settings: {adjusted_width}x{adjusted_height}, {length} frames, {steps} steps, CFG {cfg}, {fps} fps")
+    mode_str = "FLF2V" if use_flf2v else "I2V"
+    logger.info(f"DaSiWa settings [{mode_str}]: {adjusted_width}x{adjusted_height}, {length} frames, {steps} steps, CFG {cfg}, {fps} fps, sampler={sampler_name}, scheduler={scheduler}")
 
     # === Connect to ComfyUI ===
     ws_url = f"ws://{server_address}:8188/ws?clientId={client_id}"

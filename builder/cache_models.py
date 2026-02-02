@@ -19,17 +19,17 @@ TEXT_ENCODERS_PATH = os.path.join(COMFYUI_BASE, "text_encoders")
 # МИНИМАЛЬНЫЙ НАБОР ДЛЯ DaSiWa I2V (4 файла)
 # ============================================================================
 # 
-# 1. TastySin-HIGH-v8.1.safetensors - основная модель HIGH
-#    Источник: CivitAI (DaSiWa / TastySin)
+# 1. DasiwaWAN22I2V14B_synthseductionHighV9.safetensors - основная модель HIGH
+#    Источник: CivitAI (DaSiWa / SynthSeduction v9)
 #    Папка: /ComfyUI/models/checkpoints/
 #
-# 2. TastySin-LOW-v8.1.safetensors - основная модель LOW  
-#    Источник: CivitAI (DaSiWa / TastySin)
+# 2. DasiwaWAN22I2V14B_synthseductionLowV9.safetensors - основная модель LOW  
+#    Источник: CivitAI (DaSiWa / SynthSeduction v9)
 #    Папка: /ComfyUI/models/checkpoints/
 #
 # 3. wan_2.1_vae.safetensors - VAE для декодирования видео
 #    Источник: https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/vae/wan_2.1_vae.safetensors
-#    Папка: /ComfyUI/models/vae/
+#    Папка: /ComfyUI/models/vae/Wan/
 #
 # 4. umt5_xxl_fp8_e4m3fn_scaled.safetensors - Text Encoder
 #    Источник: https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors
@@ -39,15 +39,15 @@ TEXT_ENCODERS_PATH = os.path.join(COMFYUI_BASE, "text_encoders")
 # ============================================================================
 
 YANDEX_DISK_LINKS = {
-    # 1. TastySin v8.1 HIGH - основная модель DaSiWa
+    # 1. TastySin-HIGH-v8.1 - основная модель DaSiWa
     "tastysin_high": {
-        "url": "https://disk.yandex.ru/d/ZJrBC_MQ91v3pg",
+        "url": "ВСТАВЬТЕ_ССЫЛКУ_ЯНДЕКС_ДИСК",
         "path": os.path.join(CHECKPOINTS_PATH, "TastySin-HIGH-v8.1.safetensors"),
     },
     
-    # 2. TastySin v8.1 LOW - основная модель DaSiWa
+    # 2. TastySin-LOW-v8.1 - основная модель DaSiWa
     "tastysin_low": {
-        "url": "https://disk.yandex.ru/d/fd8gaa1MGsIDJQ",
+        "url": "ВСТАВЬТЕ_ССЫЛКУ_ЯНДЕКС_ДИСК",
         "path": os.path.join(CHECKPOINTS_PATH, "TastySin-LOW-v8.1.safetensors"),
     },
     
@@ -55,7 +55,7 @@ YANDEX_DISK_LINKS = {
     # Источник: https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/vae/wan_2.1_vae.safetensors
     "vae": {
         "url": "https://disk.yandex.ru/d/U9NowrvDo9-qgA",
-        "path": os.path.join(VAE_PATH, "wan_2.1_vae.safetensors"),
+        "path": os.path.join(VAE_PATH, "Wan", "wan_2.1_vae.safetensors"),
     },
     
     # 4. Text Encoder (FP8) - обязательно для обработки промпта

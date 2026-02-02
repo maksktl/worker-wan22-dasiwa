@@ -1,14 +1,15 @@
-# 🗡️💀 DaSiWa I2V Worker - RunPod Serverless 💀🗡️
+# 🗡️💀 DaSiWa I2V/FLF2V Worker - RunPod Serverless 💀🗡️
 
-This project provides a RunPod Serverless Worker for generating videos from images using **DaSiWa (TastySin v8.1)** model - a high-performance Wan 2.2 checkpoint optimized for fast, high-quality image-to-video generation.
+This project provides a RunPod Serverless Worker for generating videos from images using **DaSiWa (SynthSeduction v9)** model - a high-performance Wan 2.2 checkpoint optimized for fast, high-quality image-to-video generation.
 
 **DaSiWa** is an optimized Wan 2.2 checkpoint that generates high-quality videos with just **4 steps** and **CFG 1**, making it extremely fast while maintaining excellent quality.
 
 ## ✨ Key Features
 
-*   **DaSiWa Model**: Powered by TastySin v8.1 HIGH/LOW checkpoints for fast, high-quality video generation
+*   **DaSiWa Model**: Powered by SynthSeduction v9 HIGH/LOW checkpoints for fast, high-quality video generation
 *   **Ultra-Fast Generation**: 4-step generation with CFG 1 (built-in speed optimization)
-*   **Image-to-Video**: Converts static images into dynamic videos with natural motion
+*   **I2V Mode**: Image-to-Video - converts a single image into dynamic video
+*   **FLF2V Mode**: First-Last-Frame-to-Video - generates smooth transitions between two images
 *   **Base64 Encoding Support**: Handles image encoding/decoding automatically
 *   **Minimal Dependencies**: Only 4 model files required (no CLIP Vision needed!)
 *   **ComfyUI Integration**: Built on ComfyUI for flexible workflow management
@@ -16,7 +17,7 @@ This project provides a RunPod Serverless Worker for generating videos from imag
 
 ## 🚀 RunPod Serverless Template
 
-This template includes all necessary components to run **DaSiWa I2V** as a RunPod Serverless Worker.
+This template includes all necessary components to run **DaSiWa I2V/FLF2V** as a RunPod Serverless Worker.
 
 *   **Dockerfile**: Configures the environment and installs all dependencies
 *   **handler.py**: Implements the handler function for RunPod Serverless
@@ -32,7 +33,7 @@ The worker requires **only 4 model files**:
 |---|------|----------|-------|
 | 1 | `TastySin-HIGH-v8.1.safetensors` | `checkpoints/` | CivitAI |
 | 2 | `TastySin-LOW-v8.1.safetensors` | `checkpoints/` | CivitAI |
-| 3 | `wan_2.1_vae.safetensors` | `vae/` | [HuggingFace](https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/vae/wan_2.1_vae.safetensors) |
+| 3 | `wan_2.1_vae.safetensors` | `vae/Wan/` | [HuggingFace](https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/blob/main/split_files/vae/wan_2.1_vae.safetensors) |
 | 4 | `umt5_xxl_fp8_e4m3fn_scaled.safetensors` | `text_encoders/` | [HuggingFace](https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors) |
 
 **⚠️ CLIP Vision is NOT required** for DaSiWa I2V workflow!
@@ -50,12 +51,21 @@ The worker requires **only 4 model files**:
 
 The `input` object must contain the following fields. Images can be input using **path, URL or Base64** - use only one method.
 
-#### Image Input (use only one)
+#### First Frame Image Input (required - use only one)
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `image_path` | `string` | No | - | Local path to the input image |
-| `image_url` | `string` | No | - | URL of the input image |
-| `image_base64` | `string` | No | - | Base64 encoded string of the input image |
+| `image_path` | `string` | No | - | Local path to the first frame image |
+| `image_url` | `string` | No | - | URL of the first frame image |
+| `image_base64` | `string` | No | - | Base64 encoded string of the first frame image |
+
+#### Last Frame Image Input (optional - for FLF2V mode, use only one)
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `last_image_path` | `string` | No | - | Local path to the last frame image |
+| `last_image_url` | `string` | No | - | URL of the last frame image |
+| `last_image_base64` | `string` | No | - | Base64 encoded string of the last frame image |
+
+> 💡 **Tip**: If you provide a last frame image, the worker automatically switches to **FLF2V mode** (First-Last-Frame-to-Video), creating a smooth transition between the two images.
 
 #### Video Generation Parameters
 | Parameter | Type | Required | Default | Description |
@@ -69,6 +79,8 @@ The `input` object must contain the following fields. Images can be input using 
 | `steps` | `integer` | No | `4` | Number of denoising steps (DaSiWa optimized) |
 | `fps` | `integer` | No | `16` | Frames per second |
 | `negative_prompt` | `string` | No | (default) | Negative prompt (note: CFG 1 limits negative prompt effectiveness) |
+| `sampler_name` | `string` | No | `euler` | Sampler name (FastFidelity C-AiO default: euler) |
+| `scheduler` | `string` | No | `linear_quadratic` | Scheduler type (FastFidelity C-AiO default: linear_quadratic) |
 
 **Request Examples:**
 
@@ -115,6 +127,36 @@ The `input` object must contain the following fields. Images can be input using 
     "steps": 4,
     "cfg": 1.0,
     "fps": 16
+  }
+}
+```
+
+#### 4. FLF2V Mode (First-Last Frame to Video)
+```json
+{
+  "input": {
+    "prompt": "smooth morphing transition",
+    "image_base64": "<first_frame_base64>",
+    "last_image_base64": "<last_frame_base64>",
+    "width": 528,
+    "height": 768,
+    "length": 81,
+    "steps": 4,
+    "cfg": 1.0
+  }
+}
+```
+
+#### 5. FLF2V with URLs
+```json
+{
+  "input": {
+    "prompt": "person walking from point A to point B",
+    "image_url": "https://example.com/start_frame.jpg",
+    "last_image_url": "https://example.com/end_frame.jpg",
+    "width": 560,
+    "height": 720,
+    "length": 81
   }
 }
 ```
@@ -176,6 +218,8 @@ Instead of directly transmitting Base64 encoded files, you can use RunPod's Netw
 | **Resolution** | Up to 720p | Native quality (e.g., 528x768, 560x720, 608x1072) |
 | **FPS** | 16 | Standard frame rate |
 | **Length** | 81 frames | ~5 seconds at 16fps |
+| **Sampler** | euler | FastFidelity C-AiO default sampler |
+| **Scheduler** | linear_quadratic | FastFidelity C-AiO default scheduler |
 
 ### Recommended Aspect Ratios
 
@@ -192,17 +236,25 @@ Instead of directly transmitting Base64 encoded files, you can use RunPod's Netw
 
 ## 🔧 DaSiWa Workflow Configuration
 
-This template uses an optimized workflow configuration for **DaSiWa I2V**:
+This template uses an optimized workflow configuration based on **FastFidelity C-AiO**:
 
-*   **dasiwa_i2v_api.json**: DaSiWa image-to-video generation workflow
+*   **dasiwa_i2v_api.json**: DaSiWa I2V/FLF2V generation workflow
 
 The workflow is based on ComfyUI and includes:
 - CheckpointLoaderSimple nodes for HIGH/LOW models
 - CLIP text encoding for prompts
 - VAE loading and processing
-- WanImageToVideo node for video generation
+- **WanFirstLastFrameToVideo** node for FLF2V mode (with first + last frame)
+- **WanImageToVideo** node for I2V mode (single image, backward compatible)
 - KSamplerAdvanced nodes for HIGH/LOW sampling
 - VHS_VideoCombine for video output
+
+### Generation Modes
+
+| Mode | Description | Required Parameters |
+|------|-------------|--------------------|
+| **I2V** | Image-to-Video | `image_*` (first frame only) |
+| **FLF2V** | First-Last-Frame-to-Video | `image_*` + `last_image_*` |
 
 ## 🙏 About DaSiWa
 
@@ -218,7 +270,7 @@ The workflow is based on ComfyUI and includes:
 
 - **Model**: [DaSiWa WAN 2.2 I2V 14B Lightspeed](https://civitai.com/models/1981116)
 - **Version Used**: TastySin v8.1 HIGH/LOW
-- **Workflow**: [FastFidelity C-I2V](https://civitai.com/models/1823089)
+- **Workflow**: [FastFidelity C-AiO](https://civitai.com/models/1823089)
 
 ## 🙏 Credits & Original Projects
 
